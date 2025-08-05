@@ -1,11 +1,13 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 
 	_ "github.com/lib/pq"
 	"github.com/nfongster/blog-aggregator/internal/config"
+	"github.com/nfongster/blog-aggregator/internal/database"
 )
 
 func main() {
@@ -18,8 +20,14 @@ func main() {
 	}
 	fmt.Printf("Current config file: %v\n", cfg)
 
+	// Open a connection to the DB
+	db, err := sql.Open("postgres", cfg.ConnectionString)
+	dbQueries := database.New(db)
+
+	// Store the config and DB connection
 	state := config.State{
-		Config: &cfg,
+		Db:  dbQueries,
+		Cfg: &cfg,
 	}
 	commands := config.RegisterCommands(&state)
 

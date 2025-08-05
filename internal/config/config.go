@@ -10,8 +10,9 @@ const configFileName = ".gatorconfig.json"
 const defaultDbUrl = "postgres://example"
 
 type Config struct {
-	DbUrl           string `json:"db_url"`
-	CurrentUserName string `json:"current_user_name"`
+	DbUrl            string `json:"db_url"`
+	CurrentUserName  string `json:"current_user_name"`
+	ConnectionString string `json:"connection_string"`
 }
 
 func (c *Config) SetUser(user string) error {

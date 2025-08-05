@@ -1,9 +1,14 @@
 package config
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/nfongster/blog-aggregator/internal/database"
+)
 
 type State struct {
-	Config *Config
+	Db  *database.Queries
+	Cfg *Config
 }
 
 type Command struct {
@@ -43,7 +48,7 @@ func handlerLogin(s *State, cmd Command) error {
 	}
 
 	username := cmd.Args[0]
-	if err := s.Config.SetUser(username); err != nil {
+	if err := s.Cfg.SetUser(username); err != nil {
 		return err
 	}
 
