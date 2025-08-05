@@ -1,8 +1,12 @@
 package config
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/nfongster/blog-aggregator/internal/database"
 )
 
@@ -26,6 +30,7 @@ func RegisterCommands(s *State) *Commands {
 	}
 
 	commands.register("login", handlerLogin)
+	commands.register("register", handlerRegister)
 	return &commands
 }
 
@@ -48,10 +53,40 @@ func handlerLogin(s *State, cmd Command) error {
 	}
 
 	username := cmd.Args[0]
+	if _, err := s.Db.GetUser(context.Background(), username); err != nil {
+		fmt.Println("a user with that name does not exist.")
+		os.Exit(1)
+	}
 	if err := s.Cfg.SetUser(username); err != nil {
 		return err
 	}
 
 	fmt.Printf("Username has been set to %s.\n", username)
+	return nil
+}
+
+func handlerRegister(s *State, cmd Command) error {
+	if len(cmd.Args) < 1 {
+		return fmt.Errorf("register command expects a username as an argument")
+	}
+
+	username := cmd.Args[0]
+	if _, err := s.Db.GetUser(context.Background(), username); err == nil {
+		fmt.Println("a user with that name already exists.")
+		os.Exit(1)
+	}
+
+	user, err := s.Db.CreateUser(context.Background(), database.CreateUserParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Name:      username,
+	})
+	if err != nil {
+		return err
+	}
+
+	s.Cfg.SetUser(user.Name)
+	fmt.Printf("User %s was created.  Info:\n%v", user.Name, user)
 	return nil
 }
