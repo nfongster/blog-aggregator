@@ -18,7 +18,7 @@ func (c *Config) SetUser(user string) error {
 	c.DbUrl = defaultDbUrl
 	c.CurrentUserName = user
 	if err := write(c); err != nil {
-		return fmt.Errorf("Error updating user to %s: %v\n", user, err)
+		return fmt.Errorf("error updating user to %s: %v", user, err)
 	}
 	return nil
 }
