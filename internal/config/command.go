@@ -31,6 +31,7 @@ func RegisterCommands(s *State) *Commands {
 
 	commands.register("login", handlerLogin)
 	commands.register("register", handlerRegister)
+	commands.register("reset", handlerReset)
 	return &commands
 }
 
@@ -88,5 +89,14 @@ func handlerRegister(s *State, cmd Command) error {
 
 	s.Cfg.SetUser(user.Name)
 	fmt.Printf("User %s was created.  Info:\n%v", user.Name, user)
+	return nil
+}
+
+func handlerReset(s *State, cmd Command) error {
+	if err := s.Db.DeleteAllUsers(context.Background()); err != nil {
+		fmt.Printf("error deleting all users: %v", err)
+		os.Exit(1)
+	}
+	fmt.Println("Successfully deleted all users.")
 	return nil
 }
