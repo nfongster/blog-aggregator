@@ -33,6 +33,7 @@ func RegisterCommands(s *State) *Commands {
 	commands.register("register", handlerRegister)
 	commands.register("reset", handlerReset)
 	commands.register("users", handlerUsers)
+	commands.register("agg", handlerAgg)
 	return &commands
 }
 
@@ -119,5 +120,17 @@ func handlerUsers(s *State, cmd Command) error {
 			fmt.Printf("* %s\n", user.Name)
 		}
 	}
+	return nil
+}
+
+func handlerAgg(s *State, cmd Command) error {
+	// TODO: Temporarily hard-coded URL
+	url := "https://www.wagslane.dev/index.xml"
+	feed, err := FetchFeed(context.Background(), url)
+	if err != nil {
+		fmt.Printf("error fetching feed: %v", err)
+		os.Exit(1)
+	}
+	fmt.Println(feed)
 	return nil
 }
