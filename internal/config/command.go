@@ -35,6 +35,7 @@ func RegisterCommands(s *State) *Commands {
 	commands.register("users", handlerUsers)
 	commands.register("agg", handlerAgg)
 	commands.register("addfeed", handlerAddFeed)
+	commands.register("feeds", handlerFeeds)
 	return &commands
 }
 
@@ -158,10 +159,32 @@ func handlerAddFeed(s *State, cmd Command) error {
 		UserID:    user.ID,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("error adding feed to DB: %v", err)
 	}
 	fmt.Println(dbFeed.Name)
 	fmt.Println(dbFeed.Url)
 	fmt.Println(dbFeed.ID)
+	return nil
+}
+
+func handlerFeeds(s *State, cmd Command) error {
+	feeds, err := s.Db.GetFeeds(context.Background())
+	if err != nil {
+		return fmt.Errorf("error getting feeds from DB: %v", err)
+	}
+
+	for i, feed := range feeds {
+		fmt.Printf("--- Feed #%d ---\n", i+1)
+		fmt.Printf("Name:  %s\n", feed.Name)
+		fmt.Printf("URL:   %s\n", feed.Url)
+
+		owner, err := s.Db.GetUserById(context.Background(), feed.UserID)
+		if err != nil {
+			fmt.Printf("Failed to retrieve user with id %d\n", feed.UserID)
+		} else {
+			fmt.Printf("Owner: %s\n", owner.Name)
+		}
+		fmt.Println()
+	}
 	return nil
 }
