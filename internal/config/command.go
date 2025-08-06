@@ -34,6 +34,7 @@ func RegisterCommands(s *State) *Commands {
 	commands.register("reset", handlerReset)
 	commands.register("users", handlerUsers)
 	commands.register("agg", handlerAgg)
+	commands.register("addfeed", handlerAddFeed)
 	return &commands
 }
 
@@ -132,5 +133,35 @@ func handlerAgg(s *State, cmd Command) error {
 		os.Exit(1)
 	}
 	fmt.Println(feed)
+	return nil
+}
+
+func handlerAddFeed(s *State, cmd Command) error {
+	if len(cmd.Args) < 2 {
+		return fmt.Errorf("addfeed command expects a feed name and url as arguments")
+	}
+
+	name, url := cmd.Args[0], cmd.Args[1]
+	regUser := s.Cfg.CurrentUserName
+	user, err := s.Db.GetUser(context.Background(), regUser)
+	if err != nil {
+		fmt.Printf("failed to retrieve registered user %s from the database\n", regUser)
+		os.Exit(1)
+	}
+
+	dbFeed, err := s.Db.CreateFeed(context.Background(), database.CreateFeedParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Name:      name,
+		Url:       url,
+		UserID:    user.ID,
+	})
+	if err != nil {
+		return err
+	}
+	fmt.Println(dbFeed.Name)
+	fmt.Println(dbFeed.Url)
+	fmt.Println(dbFeed.ID)
 	return nil
 }
