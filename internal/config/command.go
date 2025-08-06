@@ -89,7 +89,10 @@ func handlerRegister(s *State, cmd Command) error {
 	}
 
 	s.Cfg.SetUser(user.Name)
-	fmt.Printf("User %s was created.  Info:\n%v", user.Name, user)
+	fmt.Printf("User %s was created.\n", user.Name)
+	fmt.Printf("ID: %s\n", user.ID)
+	fmt.Printf("Created at: %s\n", user.CreatedAt)
+	fmt.Printf("Updated at: %s\n", user.UpdatedAt)
 	return nil
 }
 
