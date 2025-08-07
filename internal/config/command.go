@@ -152,7 +152,7 @@ func handlerAddFeed(s *State, cmd Command) error {
 		os.Exit(1)
 	}
 
-	dbFeed, err := s.Db.CreateFeed(context.Background(), database.CreateFeedParams{
+	feed, err := s.Db.CreateFeed(context.Background(), database.CreateFeedParams{
 		ID:        uuid.New(),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -163,9 +163,10 @@ func handlerAddFeed(s *State, cmd Command) error {
 	if err != nil {
 		return fmt.Errorf("error adding feed to DB: %v", err)
 	}
-	fmt.Println(dbFeed.Name)
-	fmt.Println(dbFeed.Url)
-	fmt.Println(dbFeed.ID)
+	fmt.Println(feed.Name)
+	fmt.Println(feed.Url)
+	fmt.Println(feed.ID)
+	createFeedFollow(s.Db, &user, &feed)
 	return nil
 }
 
@@ -212,17 +213,7 @@ func handlerFollow(s *State, cmd Command) error {
 		return err
 	}
 
-	feedFollow, err := s.Db.CreateFeedFollow(context.Background(), database.CreateFeedFollowParams{
-		ID:        uuid.New(),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		UserID:    user.ID,
-		FeedID:    feed.ID,
-	})
-	if err != nil {
-		return fmt.Errorf("error creating feed-follow record: %v", err)
-	}
-	fmt.Printf("Linked user \"%s\" to feed \"%s\".\n", feedFollow.UserName, feedFollow.FeedName)
+	createFeedFollow(s.Db, &user, &feed)
 	return nil
 }
 
@@ -235,6 +226,21 @@ func handlerFollowing(s *State, cmd Command) error {
 	for _, feed := range feeds {
 		fmt.Printf("* %s", feed.FeedName)
 	}
+	return nil
+}
+
+func createFeedFollow(q *database.Queries, user *database.User, feed *database.Feed) error {
+	feedFollow, err := q.CreateFeedFollow(context.Background(), database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID:    user.ID,
+		FeedID:    feed.ID,
+	})
+	if err != nil {
+		return fmt.Errorf("error creating feed-follow record: %v", err)
+	}
+	fmt.Printf("Linked user \"%s\" to feed \"%s\".\n", feedFollow.UserName, feedFollow.FeedName)
 	return nil
 }
 
