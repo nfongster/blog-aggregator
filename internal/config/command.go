@@ -38,6 +38,7 @@ func RegisterCommands(s *State) *Commands {
 	commands.register("feeds", handlerFeeds)
 	commands.register("follow", middlewareLoggedIn(handlerFollow))
 	commands.register("following", middlewareLoggedIn(handlerFollowing))
+	commands.register("unfollow", middlewareLoggedIn(handlerUnfollow))
 	return &commands
 }
 
@@ -213,6 +214,21 @@ func handlerFollowing(s *State, cmd Command, user database.User) error {
 	fmt.Printf("Feeds followed by current user %s:\n", user.Name)
 	for _, feed := range feeds {
 		fmt.Printf("* %s", feed.FeedName)
+	}
+	return nil
+}
+
+func handlerUnfollow(s *State, cmd Command, user database.User) error {
+	if len(cmd.Args) < 1 {
+		return fmt.Errorf("unfollow command expects a url as an argument")
+	}
+
+	url := cmd.Args[0]
+	if err := s.Db.DeleteFeedFollow(context.Background(), database.DeleteFeedFollowParams{
+		Name: user.Name,
+		Url:  url,
+	}); err != nil {
+		return err
 	}
 	return nil
 }
