@@ -36,6 +36,7 @@ func RegisterCommands(s *State) *Commands {
 	commands.register("agg", handlerAgg)
 	commands.register("addfeed", handlerAddFeed)
 	commands.register("feeds", handlerFeeds)
+	commands.register("follow", handlerFollow)
 	return &commands
 }
 
@@ -187,4 +188,48 @@ func handlerFeeds(s *State, cmd Command) error {
 		fmt.Println()
 	}
 	return nil
+}
+
+func handlerFollow(s *State, cmd Command) error {
+	if len(cmd.Args) < 1 {
+		return fmt.Errorf("follow command expects a url as an argument")
+	}
+
+	url := cmd.Args[0]
+	user, err := s.Db.GetUser(context.Background(), s.Cfg.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("error getting user from DB: %v", err)
+	}
+
+	feeds, err := s.Db.GetFeeds(context.Background())
+	if err != nil {
+		return fmt.Errorf("error getting feeds from DB: %v", err)
+	}
+	// TODO: Turn this into its own SQL query
+	feed, err := getFeedByUrl(feeds, url)
+	if err != nil {
+		return err
+	}
+
+	feedFollow, err := s.Db.CreateFeedFollow(context.Background(), database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID:    user.ID,
+		FeedID:    feed.ID,
+	})
+	if err != nil {
+		return fmt.Errorf("error creating feed-follow record: %v", err)
+	}
+	fmt.Printf("Linked user \"%s\" to feed \"%s\".\n", feedFollow.UserName, feedFollow.FeedName)
+	return nil
+}
+
+func getFeedByUrl(feeds []database.Feed, url string) (database.Feed, error) {
+	for _, feed := range feeds {
+		if feed.Url == url {
+			return feed, nil
+		}
+	}
+	return database.Feed{}, fmt.Errorf("no feed with url %s exists", url)
 }
