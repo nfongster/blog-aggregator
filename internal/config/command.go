@@ -37,6 +37,7 @@ func RegisterCommands(s *State) *Commands {
 	commands.register("addfeed", handlerAddFeed)
 	commands.register("feeds", handlerFeeds)
 	commands.register("follow", handlerFollow)
+	commands.register("following", handlerFollowing)
 	return &commands
 }
 
@@ -222,6 +223,18 @@ func handlerFollow(s *State, cmd Command) error {
 		return fmt.Errorf("error creating feed-follow record: %v", err)
 	}
 	fmt.Printf("Linked user \"%s\" to feed \"%s\".\n", feedFollow.UserName, feedFollow.FeedName)
+	return nil
+}
+
+func handlerFollowing(s *State, cmd Command) error {
+	feeds, err := s.Db.GetFeedFollowsForUser(context.Background(), s.Cfg.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("error getting feeds followed by current user: %v", err)
+	}
+	fmt.Printf("Feeds followed by current user %s:\n", s.Cfg.CurrentUserName)
+	for _, feed := range feeds {
+		fmt.Printf("* %s", feed.FeedName)
+	}
 	return nil
 }
 
