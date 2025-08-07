@@ -129,15 +129,22 @@ func handlerUsers(s *State, cmd Command) error {
 }
 
 func handlerAgg(s *State, cmd Command) error {
-	// TODO: Temporarily hard-coded URL
-	url := "https://www.wagslane.dev/index.xml"
-	feed, err := FetchFeed(context.Background(), url)
-	if err != nil {
-		fmt.Printf("error fetching feed: %v", err)
-		os.Exit(1)
+	if len(cmd.Args) < 1 {
+		return fmt.Errorf("agg commands expect a duration string as an arg")
 	}
-	fmt.Println(feed)
-	return nil
+
+	time_between_reqs, err := time.ParseDuration(cmd.Args[0])
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Collecting feeds every %s\n", time_between_reqs.String())
+	ticker := time.NewTicker(time_between_reqs)
+	for ; ; <-ticker.C {
+		if err = scrapeFeeds(s.Db); err != nil {
+			return err
+		}
+	}
 }
 
 func handlerAddFeed(s *State, cmd Command, user database.User) error {
@@ -213,7 +220,7 @@ func handlerFollowing(s *State, cmd Command, user database.User) error {
 	}
 	fmt.Printf("Feeds followed by current user %s:\n", user.Name)
 	for _, feed := range feeds {
-		fmt.Printf("* %s", feed.FeedName)
+		fmt.Printf("* %s\n", feed.FeedName)
 	}
 	return nil
 }
@@ -255,4 +262,26 @@ func getFeedByUrl(feeds []database.Feed, url string) (database.Feed, error) {
 		}
 	}
 	return database.Feed{}, fmt.Errorf("no feed with url %s exists", url)
+}
+
+func scrapeFeeds(db *database.Queries) error {
+	feed, err := db.GetNextFeedToFetch(context.Background())
+	if err != nil {
+		return err
+	}
+
+	if err = db.MarkFeedFetched(context.Background(), feed.ID); err != nil {
+		return err
+	}
+
+	rssFeed, err := FetchFeed(context.Background(), feed.Url)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("\n--- Titles from feed %s: ---\n", rssFeed.Channel.Title)
+	for _, item := range rssFeed.Channel.Item {
+		fmt.Printf("* %s\n", item.Title)
+	}
+	return nil
 }
