@@ -283,5 +283,30 @@ func scrapeFeeds(db *database.Queries) error {
 	for _, item := range rssFeed.Channel.Item {
 		fmt.Printf("* %s\n", item.Title)
 	}
+
+	fmt.Println("---- Saving to database... ---")
+	for _, item := range rssFeed.Channel.Item {
+		parsedPubDate, err := time.Parse("Mon, 04 Aug 2025 07:24:00 UTC", item.PubDate)
+		if err != nil {
+			fmt.Println("(WARNING: Failed to parse publication date.  Skipping post creation.)")
+			continue
+		}
+
+		_, err = db.CreatePost(context.Background(), database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Title:       item.Title,
+			Url:         item.Link,
+			Description: item.Description,
+			PublishedAt: parsedPubDate,
+			FeedID:      feed.ID,
+		})
+		if err != nil {
+			// TODO: just continue if the post already exists
+			return err
+		}
+	}
+
 	return nil
 }
