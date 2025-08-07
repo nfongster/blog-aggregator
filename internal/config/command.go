@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -39,6 +40,7 @@ func RegisterCommands(s *State) *Commands {
 	commands.register("follow", middlewareLoggedIn(handlerFollow))
 	commands.register("following", middlewareLoggedIn(handlerFollowing))
 	commands.register("unfollow", middlewareLoggedIn(handlerUnfollow))
+	commands.register("browse", middlewareLoggedIn(handlerBrowse))
 	return &commands
 }
 
@@ -240,6 +242,31 @@ func handlerUnfollow(s *State, cmd Command, user database.User) error {
 	return nil
 }
 
+func handlerBrowse(s *State, cmd Command, user database.User) error {
+	limit := int32(2)
+	if len(cmd.Args) >= 1 {
+		newLim, err := strconv.Atoi(cmd.Args[0])
+		if err != nil {
+			return err
+		}
+		limit = int32(newLim)
+	}
+
+	posts, err := s.Db.GetPostsForUser(context.Background(), database.GetPostsForUserParams{
+		Name:  user.Name,
+		Limit: limit,
+	})
+	if err != nil {
+		return err
+	}
+
+	for i, post := range posts {
+		fmt.Printf("\n--- %d. %s (%s) ---\n", i+1, post.Title, post.PublishedAt)
+		fmt.Println(post.Description)
+	}
+	return nil
+}
+
 func createFeedFollow(q *database.Queries, user *database.User, feed *database.Feed) error {
 	feedFollow, err := q.CreateFeedFollow(context.Background(), database.CreateFeedFollowParams{
 		ID:        uuid.New(),
@@ -288,8 +315,7 @@ func scrapeFeeds(db *database.Queries) error {
 	for _, item := range rssFeed.Channel.Item {
 		parsedPubDate, err := time.Parse("Mon, 04 Aug 2025 07:24:00 UTC", item.PubDate)
 		if err != nil {
-			fmt.Println("(WARNING: Failed to parse publication date.  Skipping post creation.)")
-			continue
+			fmt.Println("(WARNING: Failed to parse publication date.)")
 		}
 
 		_, err = db.CreatePost(context.Background(), database.CreatePostParams{
